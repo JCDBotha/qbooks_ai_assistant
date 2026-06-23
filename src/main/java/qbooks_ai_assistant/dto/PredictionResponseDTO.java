@@ -1,0 +1,34 @@
+package qbooks_ai_assistant.dto;
+
+public class PredictionResponseDTO {
+
+    private String category;
+    private double confidence;
+
+    public PredictionResponseDTO() {
+    }
+
+    public PredictionResponseDTO(String category,
+            double confidence) {
+
+        this.category = category;
+        this.confidence = confidence;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public double getConfidence() {
+        return confidence;
+    }
+
+    public void setConfidence(double confidence) {
+        this.confidence = confidence;
+    }
+
+}

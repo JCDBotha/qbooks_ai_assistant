@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>QBooks AI Dashboard</title>
+    <style>
+        body {
+            font-family: Arial;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background-color: #1e2a38;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .button {
+            background-color: #2d89ef;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .button:hover {
+            background-color: #1b5fbf;
+        }
+
+        a {
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>QBooks AI Assistant</h1>
+</div>
+
+<div class="container">
+
+    <div class="card">
+        <h2>System Status</h2>
+        <p th:text="${status}"></p>
+    </div>
+
+    <div class="card">
+        <h2>Connected Companies</h2>
+        <p th:text="${companies} + ' active companies'"></p>
+    </div>
+
+    <div class="card">
+        <h2>Pending Transactions</h2>
+        <p th:text="${transactions} + ' transactions waiting review'"></p>
+    </div>
+
+    <div class="card">
+        <a href="/connect">
+            <button class="button">Connect QuickBooks</button>
+        </a>
+    </div>
+
+    <div class="card">
+        <h2>Recent Transactions</h2>
+
+        <table border="1" cellpadding="8">
+            <tr>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Category</th>
+                <th>Action</th>
+            </tr>
+
+            <tr th:each="transaction : ${transactionList}">
+                <td th:text="${transaction.description}"></td>
+                <td th:text="${transaction.amount}"></td>
+                <td th:text="${transaction.category}"></td>
+                <td>
+                    <button>Approve</button>
+                    <button>Reject</button>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+</div>
+
+</body>
+</html>

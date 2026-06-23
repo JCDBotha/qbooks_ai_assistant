@@ -1,0 +1,19 @@
+# Ignoreer die plaaslike .github gids
+/.github/
+
+# Ignoreer VS Code plaaslike geskiedenis
+.history/
+**/_history/
+
+# Ignoreer Maven build dopgehou
+target/
+*.class
+
+# Ignoreer ander IDE konfigurasies
+.idea/
+*.iml
+.settings/
+.project/
+.classpath/
+
+
