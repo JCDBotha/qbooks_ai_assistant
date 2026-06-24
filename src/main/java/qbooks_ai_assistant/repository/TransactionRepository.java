@@ -1,5 +1,6 @@
 package qbooks_ai_assistant.repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,4 +11,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     List<Transaction> findByStatus(String status);
 
+    boolean existsByDescriptionAndAmount(
+            String description,
+            BigDecimal amount);
 }

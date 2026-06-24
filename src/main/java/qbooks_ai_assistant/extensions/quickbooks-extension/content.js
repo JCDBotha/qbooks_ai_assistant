@@ -58,6 +58,14 @@
 
         console.log("🧪 extract() triggered");
 
+       const companyElement =
+    document.querySelector(".client-switcher-title");
+
+const companyName =
+    companyElement?.innerText?.trim() || "UNKNOWN_COMPANY";
+
+console.log("🏢 Company:", companyName);
+
         const results = [];
 
         const rows = document.querySelectorAll(
@@ -95,10 +103,11 @@
             console.log("🚀 Sending to background script...");
 
             chrome.runtime.sendMessage(
-                {
-                    type: "PREDICT_TRANSACTIONS",
-                    data: results
-                },
+        {
+           type: "PREDICT_TRANSACTIONS",
+            companyName: companyName,
+             data: results
+            },
                 (response) => {
 
                     isSending = false; // ✅ IMPORTANT FIX

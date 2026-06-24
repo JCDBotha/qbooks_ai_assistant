@@ -1,10 +1,8 @@
 package qbooks_ai_assistant.controller;
 
-import java.util.List;
-
 import org.springframework.web.bind.annotation.*;
 
-import qbooks_ai_assistant.dto.UnknownTransactionDTO;
+import qbooks_ai_assistant.dto.UnknownTransactionRequest;
 import qbooks_ai_assistant.service.UnknownTransactionService;
 
 @RestController
@@ -21,25 +19,26 @@ public class UnknownTransactionController {
 
     @PostMapping
     public String receiveUnknownTransactions(
-            @RequestBody List<UnknownTransactionDTO> transactions) {
+            @RequestBody UnknownTransactionRequest request) {
 
         System.out.println("====================================");
         System.out.println("UNKNOWN TRANSACTIONS RECEIVED");
         System.out.println("====================================");
 
-        for (UnknownTransactionDTO transaction : transactions) {
+        System.out.println(
+                "COMPANY: "
+                        + request.getCompanyName());
 
-            System.out.println("Date        : " + transaction.getDate());
-            System.out.println("Description : " + transaction.getDescription());
-            System.out.println("Amount      : " + transaction.getAmount());
-            System.out.println("Bank        : " + transaction.getBankAccount());
-            System.out.println("Reference   : " + transaction.getReference());
-            System.out.println("------------------------------------");
-        }
+        System.out.println(
+                "TRANSACTIONS: "
+                        + request.getTransactions().size());
 
-        unknownTransactionService.process(transactions);
+        unknownTransactionService.process(
+                request.getCompanyName(),
+                request.getTransactions());
 
-        return "Received " + transactions.size() + " unknown transactions.";
+        return "Received "
+                + request.getTransactions().size()
+                + " unknown transactions.";
     }
-
 }
