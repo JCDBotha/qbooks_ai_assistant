@@ -16,4 +16,8 @@ target/
 .project/
 .classpath/
 
+# Ignore specific properties file
+resources/*.properties
+
+
 
