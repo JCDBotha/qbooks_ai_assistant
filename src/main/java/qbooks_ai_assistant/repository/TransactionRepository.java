@@ -1,5 +1,6 @@
 package qbooks_ai_assistant.repository;
 
+import java.util.Optional;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -14,4 +15,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     boolean existsByDescriptionAndAmount(
             String description,
             BigDecimal amount);
+
+    Optional<Transaction> findTopByDescriptionOrderByIdDesc(
+            String description);
 }

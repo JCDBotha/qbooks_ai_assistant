@@ -5,7 +5,9 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import qbooks_ai_assistant.dto.AccountMatch;
 import qbooks_ai_assistant.dto.UnknownTransactionDTO;
+import qbooks_ai_assistant.entity.ChartOfAccount;
 import qbooks_ai_assistant.entity.Client;
 import qbooks_ai_assistant.entity.Transaction;
 import qbooks_ai_assistant.repository.ClientRepository;
@@ -16,16 +18,24 @@ public class UnknownTransactionService {
 
         private final TransactionRepository transactionRepository;
         private final ClientRepository clientRepository;
+        private final ChartOfAccountService chartOfAccountService;
+        private final MatchingService matchingService;
 
         public UnknownTransactionService(
                         TransactionRepository transactionRepository,
-                        ClientRepository clientRepository) {
+                        ClientRepository clientRepository,
+                        ChartOfAccountService chartOfAccountService,
+                        MatchingService matchingService) {
 
                 this.transactionRepository = transactionRepository;
                 this.clientRepository = clientRepository;
+                this.chartOfAccountService = chartOfAccountService;
+                this.matchingService = matchingService;
         }
 
-        public void process(String companyName, List<UnknownTransactionDTO> transactions) {
+        public void process(
+                        String companyName,
+                        List<UnknownTransactionDTO> transactions) {
 
                 System.out.println();
                 System.out.println("Processing "
@@ -40,6 +50,22 @@ public class UnknownTransactionService {
                                 .findFirst()
                                 .orElseThrow(() -> new RuntimeException(
                                                 "Client not found: " + companyName));
+
+                System.out.println();
+                System.out.println("=================================");
+                System.out.println("CLIENT FOUND");
+                System.out.println("=================================");
+                System.out.println(client.getCompanyName());
+
+                List<ChartOfAccount> accounts = chartOfAccountService.getAccountsForClient(client);
+
+                System.out.println();
+                System.out.println("=================================");
+                System.out.println("CLIENT CHART OF ACCOUNTS");
+                System.out.println("=================================");
+                System.out.println("Accounts loaded: " + accounts.size());
+
+                accounts.forEach(account -> System.out.println(account.getAccountName()));
 
                 for (UnknownTransactionDTO dto : transactions) {
 
@@ -56,27 +82,43 @@ public class UnknownTransactionService {
                                 continue;
                         }
 
+                        AccountMatch match = matchingService.findBestMatch(
+                                        dto,
+                                        client,
+                                        accounts);
+
                         Transaction transaction = new Transaction();
 
                         transaction.setClient(client);
-
                         transaction.setDescription(dto.getDescription());
-
                         transaction.setAmount(dto.getAmount());
-
                         transaction.setStatus("PENDING");
-
-                        transaction.setSuggestedCategory("UNKNOWN");
-
                         transaction.setTransactionDate(LocalDate.now());
+
+                        if (match.getAccount() != null) {
+
+                                transaction.setSuggestedCategory(
+                                                match.getAccount().getAccountName());
+
+                        } else {
+
+                                transaction.setSuggestedCategory("UNKNOWN");
+                        }
 
                         transactionRepository.save(transaction);
 
-                        System.out.println(
-                                        "Saved transaction for client: "
-                                                        + client.getCompanyName()
-                                                        + " -> "
-                                                        + dto.getDescription());
+                        System.out.println();
+                        System.out.println("---------------------------------");
+                        System.out.println("TRANSACTION SAVED");
+                        System.out.println("---------------------------------");
+                        System.out.println("Client      : " + client.getCompanyName());
+                        System.out.println("Description : " + dto.getDescription());
+                        System.out.println("Suggestion  : "
+                                        + transaction.getSuggestedCategory());
+                        System.out.println("Confidence  : "
+                                        + match.getConfidence());
+                        System.out.println("Reason      : "
+                                        + match.getReason());
                 }
         }
 }
