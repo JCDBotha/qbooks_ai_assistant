@@ -30,8 +30,20 @@ public class PromptBuilder {
                 1. You MUST choose ONLY ONE account.
                 2. You MUST choose ONLY from the supplied Chart of Accounts.
                 3. NEVER invent a new account.
-                4. If none are suitable, return UNKNOWN.
-                5. Return ONLY valid JSON.
+                4. The returned account name MUST exactly match one account from the supplied Chart of Accounts.
+                5. If none of the supplied Chart of Accounts are suitable, return:
+
+                {
+                  "account":"UNKNOWN",
+                  "confidence":0,
+                  "reason":"No suitable account found."
+                }
+
+                6. Return ONLY valid JSON.
+                7. DO NOT wrap the JSON inside ```json or ``` blocks.
+                8. Return plain JSON only.
+                9. Do not explain your answer outside the JSON.
+                10. The transaction amount is important. Use both the description and amount when making your decision.
 
                 Expected JSON format:
 
@@ -53,7 +65,7 @@ public class PromptBuilder {
         prompt.append(transaction.getDescription());
         prompt.append("\n\n");
 
-        prompt.append("Amount:\n");
+        prompt.append("Transaction Amount:\n");
         prompt.append(transaction.getAmount());
         prompt.append("\n\n");
 
@@ -72,6 +84,25 @@ public class PromptBuilder {
             prompt.append(account.getAccountName());
             prompt.append("\n");
         }
+
+        prompt.append("""
+
+                ====================================================
+
+                Think carefully before answering.
+
+                Return ONLY one JSON object.
+
+                Never explain your answer outside the JSON.
+
+                The account MUST exactly match one account from the supplied Chart of Accounts.
+
+                Do not abbreviate account names.
+
+                Do not create new account names.
+
+                If unsure, return UNKNOWN.
+                """);
 
         return prompt.toString();
     }

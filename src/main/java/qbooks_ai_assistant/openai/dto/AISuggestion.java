@@ -10,6 +10,8 @@ public class AISuggestion {
 
     private boolean valid;
 
+    private String matchedBy;
+
     public AISuggestion() {
     }
 
@@ -17,12 +19,14 @@ public class AISuggestion {
             String account,
             int confidence,
             String reason,
-            boolean valid) {
+            boolean valid,
+            String matchedBy) {
 
         this.account = account;
         this.confidence = confidence;
         this.reason = reason;
         this.valid = valid;
+        this.matchedBy = matchedBy;
     }
 
     public String getAccount() {
@@ -55,6 +59,14 @@ public class AISuggestion {
 
     public void setValid(boolean valid) {
         this.valid = valid;
+    }
+
+    public String getMatchedBy() {
+        return matchedBy;
+    }
+
+    public void setMatchedBy(String matchedBy) {
+        this.matchedBy = matchedBy;
     }
 
 }

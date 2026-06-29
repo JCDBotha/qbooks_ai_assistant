@@ -10,4 +10,6 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
 
     Optional<Client> findByRealmId(String realmId);
 
+    Optional<Client> findByCompanyName(String companyName);
+
 }

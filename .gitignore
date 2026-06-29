@@ -1,23 +1,28 @@
-# Ignoreer die plaaslike .github gids
+# Ignore local GitHub folder
 /.github/
 
-# Ignoreer VS Code plaaslike geskiedenis
+# VS Code Local History
 .history/
 **/_history/
 
-# Ignoreer Maven build dopgehou
+# Maven
 target/
 *.class
 
-# Ignoreer ander IDE konfigurasies
+# IDE files
 .idea/
 *.iml
 .settings/
 .project/
 .classpath/
 
-# Ignore specific properties file
-resources/*.properties
+# Local configuration
+src/main/resources/application.properties
+
+# Optional environment files
+.env
+.env.*
+
 
 
 

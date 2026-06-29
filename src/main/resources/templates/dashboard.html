@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>QuickBooks AI Assistant</title>
+
+
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+</head>
+
+<body class="bg-light">
+
+<div class="container mt-5">
+
+    <div class="card shadow">
+
+        <div class="card-header bg-primary text-white">
+
+            <h3>QuickBooks AI Assistant</h3>
+
+        </div>
+
+        <div class="card-body">
+
+            <h5 class="mb-3">
+                Dashboard
+            </h5>
+
+                <div class="mt-3 mb-3">
+
+    <h5>
+        Company:
+        <span class="text-primary"
+              th:text="${companyName}"></span>
+    </h5>
+
+</div>
+
+            <h6 class="mb-4">
+                Pending Transactions:
+                <span th:text="${#lists.size(transactions)}"></span>
+            </h6>
+
+            <table class="table table-striped table-hover">
+
+              <thead class="table-dark">
+
+    <tr>
+
+        <th>Date</th>
+
+        <th>Description</th>
+
+        <th>Amount</th>
+
+        <th>Suggested Account</th>
+
+        <th>Status</th>
+
+        <th>Action</th>
+
+    </tr>
+
+</thead>
+
+                <tbody>
+
+                  <tr th:each="transaction : ${transactions}"
+    th:attr="data-id=${transaction.id},
+             data-description=${transaction.description},
+             data-account=${transaction.suggestedCategory}">
+                      <td th:text="${transaction.transactionDate}"></td>
+
+    <td th:text="${transaction.description}"></td>
+
+    <td th:text="${transaction.amount}"></td>
+
+    <td th:text="${transaction.suggestedCategory}"></td>
+
+    <td th:text="${transaction.status}"></td>
+
+    <td>
+
+     <button
+    class="btn btn-success btn-sm accept-btn">
+
+    Accept
+
+</button>
+
+    <button
+    class="btn btn-warning btn-sm change-btn"
+    data-bs-toggle="modal"
+    data-bs-target="#changeAccountModal">
+
+    Change
+
+</button>
+
+        <button class="btn btn-primary btn-sm">
+            Rule
+        </button>
+
+    </td>
+
+</tr>
+
+                </tbody>
+                  
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- Change Account Modal -->
+
+<div class="modal fade"
+     id="changeAccountModal"
+     tabindex="-1">
+
+    <div class="modal-dialog">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h5 class="modal-title">
+                    Change Suggested Account
+                </h5>
+
+                <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <p>
+                    <strong>Transaction:</strong>
+                    <span id="transactionDescription"></span>
+                </p>
+
+                <input
+                        type="hidden"
+                        id="transactionId">
+
+                <label class="form-label">
+                    Choose Account
+                </label>
+
+                <select
+                        class="form-select"
+                        id="accountSelect">
+
+                    <option
+                            th:each="account : ${accounts}"
+                            th:value="${account.id}"
+                            th:text="${account.accountName}">
+                    </option>
+
+                </select>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+
+                    Cancel
+
+                </button>
+
+                <button
+                        class="btn btn-primary"
+                        id="saveAccount">
+
+                    Save
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+
+
+<script>
+
+document.querySelectorAll(".change-btn").forEach(button => {
+
+    button.addEventListener("click", function () {
+
+        const row = this.closest("tr");
+
+        document.getElementById("transactionId").value =
+            row.dataset.id;
+
+        document.getElementById("transactionDescription").innerText =
+            row.dataset.description;
+
+    });
+
+});
+
+
+document.getElementById("saveAccount")
+.addEventListener("click", function () {
+
+    const dto = {
+
+        transactionId:
+            document.getElementById("transactionId").value,
+
+        accountId:
+            document.getElementById("accountSelect").value,
+
+        action: "CHANGE"
+
+    };
+
+    fetch("/dashboard/action", {
+
+        method: "POST",
+
+        headers: {
+
+            "Content-Type": "application/json"
+
+        },
+
+        body: JSON.stringify(dto)
+
+    })
+    .then(response => response.text())
+  .then(result => {
+
+    console.log(result);
+
+    location.reload();
+
+});
+
+document.querySelectorAll(".accept-btn").forEach(button => {
+
+    button.addEventListener("click", function () {
+
+        const row = this.closest("tr");
+
+        const dto = {
+
+            transactionId: row.dataset.id,
+
+            accountId: 0,
+
+            action: "ACCEPT"
+
+        };
+
+        fetch("/dashboard/action", {
+
+            method: "POST",
+
+            headers: {
+
+                "Content-Type": "application/json"
+
+            },
+
+            body: JSON.stringify(dto)
+
+        })
+        .then(response => response.text())
+        .then(result => {
+
+            console.log(result);
+
+            location.reload();
+
+        });
+
+    });
+
+});
+
+});
+
+</script>
+</body>
+
+</html>
