@@ -4,6 +4,8 @@ public enum DashboardAction {
 
     ACCEPT,
 
+    ONCE,
+
     CHANGE,
 
     ALWAYS

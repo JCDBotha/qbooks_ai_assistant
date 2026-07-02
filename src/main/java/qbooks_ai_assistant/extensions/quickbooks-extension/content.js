@@ -67,12 +67,23 @@
 
     const parsed = parseTransactionRow(row);
 
+    console.log(parsed);
+
+    console.log(
+        "Description:",
+        parsed.description,
+        "| Amount:",
+        parsed.amount,
+        "| Action:",
+        parsed.action
+    );
+
     if (!parsed.description) return;
 
     if (parsed.amount === 0) return;
 
     // Ignore transactions already processed by QuickBooks
-    if (parsed.action !== "Add") return;
+    if (parsed.action !== "Post") return;
 
     results.push(parsed);
 

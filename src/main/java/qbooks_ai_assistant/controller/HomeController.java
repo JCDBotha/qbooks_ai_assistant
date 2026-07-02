@@ -2,9 +2,10 @@ package qbooks_ai_assistant.controller;
 
 import qbooks_ai_assistant.config.QuickBooksConfig;
 import qbooks_ai_assistant.service.QuickBooksService;
+import qbooks_ai_assistant.service.QuickBooksSessionService;
+import qbooks_ai_assistant.service.QuickBooksWriteBackService;
 import qbooks_ai_assistant.service.QuickBooksApiService;
 import qbooks_ai_assistant.dto.QuickBooksTokenResponse;
-import qbooks_ai_assistant.model.Transaction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.List;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 public class HomeController {
@@ -19,13 +21,21 @@ public class HomeController {
     private final QuickBooksConfig quickBooksConfig;
     private final QuickBooksService quickBooksService;
     private final QuickBooksApiService quickBooksApiService;
+    private final QuickBooksSessionService quickBooksSessionService;
+    private final QuickBooksWriteBackService quickBooksWriteBackService;
 
-    public HomeController(QuickBooksConfig quickBooksConfig,
+    public HomeController(
+            QuickBooksConfig quickBooksConfig,
             QuickBooksService quickBooksService,
-            QuickBooksApiService quickBooksApiService) {
+            QuickBooksApiService quickBooksApiService,
+            QuickBooksSessionService quickBooksSessionService,
+            QuickBooksWriteBackService quickBooksWriteBackService) {
+
         this.quickBooksConfig = quickBooksConfig;
         this.quickBooksService = quickBooksService;
         this.quickBooksApiService = quickBooksApiService;
+        this.quickBooksSessionService = quickBooksSessionService;
+        this.quickBooksWriteBackService = quickBooksWriteBackService;
     }
 
     @GetMapping("/")
@@ -34,14 +44,6 @@ public class HomeController {
         model.addAttribute("companies", 12);
         model.addAttribute("transactions", 347);
         model.addAttribute("status", "Running");
-
-        List<Transaction> transactionList = new ArrayList<>();
-
-        transactionList.add(new Transaction("Checkers", 850.00, "Groceries"));
-        transactionList.add(new Transaction("Eskom", 1200.00, "Utilities"));
-        transactionList.add(new Transaction("Shell Fuel", 900.00, "Transport"));
-
-        model.addAttribute("transactionList", transactionList);
 
         return "home";
     }
@@ -65,6 +67,14 @@ public class HomeController {
         return "redirect:" + authUrl;
     }
 
+    @GetMapping("/qb-test")
+    @ResponseBody
+    public String quickBooksTest() {
+
+        return quickBooksWriteBackService.testConnection();
+
+    }
+
     @GetMapping("/callback")
     public String callback(
             @org.springframework.web.bind.annotation.RequestParam("code") String code,
@@ -84,6 +94,9 @@ public class HomeController {
         System.out.println("TOKEN RESPONSE: " + tokenResponse);
 
         String accessToken = tokenResponse.getAccess_token();
+        quickBooksSessionService.setAccessToken(accessToken);
+        quickBooksSessionService.setRefreshToken(tokenResponse.getRefresh_token());
+        quickBooksSessionService.setRealmId(realmId);
 
         System.out.println("ACCESS TOKEN: " + accessToken);
 
@@ -92,8 +105,17 @@ public class HomeController {
 
         String transactions = quickBooksApiService.getTransactions(realmId, accessToken);
 
+        String chartOfAccounts = quickBooksApiService.getChartOfAccounts(realmId, accessToken);
+
         System.out.println("COMPANY INFO: " + companyInfo);
         System.out.println("TRANSACTIONS: " + transactions);
+
+        System.out.println();
+        System.out.println("==============================");
+        System.out.println("CHART OF ACCOUNTS");
+        System.out.println("==============================");
+        System.out.println(chartOfAccounts);
+        System.out.println("==============================");
 
         // 3. Send to UI
         model.addAttribute("authCode", code);
@@ -102,6 +124,6 @@ public class HomeController {
         model.addAttribute("companyInfo", companyInfo);
 
         return "home";
-    }
 
+    }
 }

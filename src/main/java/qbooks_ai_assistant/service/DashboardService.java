@@ -22,78 +22,81 @@ public class DashboardService {
     private final ClientRepository clientRepository;
     private final ChartOfAccountRepository chartOfAccountRepository;
     private final BusinessRuleService businessRuleService;
+    private final QuickBooksSessionService quickBooksSessionService;
+    private final QuickBooksWriteBackService quickBooksWriteBackService;
 
     public DashboardService(
             TransactionRepository transactionRepository,
             ClientRepository clientRepository,
             ChartOfAccountRepository chartOfAccountRepository,
-            BusinessRuleService businessRuleService) {
+            BusinessRuleService businessRuleService,
+            QuickBooksSessionService quickBooksSessionService,
+            QuickBooksWriteBackService quickBooksWriteBackService) {
 
         this.transactionRepository = transactionRepository;
         this.clientRepository = clientRepository;
         this.chartOfAccountRepository = chartOfAccountRepository;
         this.businessRuleService = businessRuleService;
+        this.quickBooksSessionService = quickBooksSessionService;
+        this.quickBooksWriteBackService = quickBooksWriteBackService;
     }
 
-    public List<Transaction> getTransactions() {
+    public org.springframework.data.domain.Page<Transaction> getTransactions(int page) {
 
-        Optional<Client> client = clientRepository.findByCompanyName("Barak Medical");
-
-        if (client.isEmpty()) {
-            return Collections.emptyList();
-        }
+        Client client = getCurrentClient();
 
         System.out.println();
         System.out.println("==============================");
         System.out.println("DASHBOARD CLIENT");
         System.out.println("==============================");
-        System.out.println("Company  : " + client.get().getCompanyName());
-        System.out.println("Realm ID : " + client.get().getRealmId());
-        System.out.println("Client ID: " + client.get().getId());
+        System.out.println("Company  : " + client.getCompanyName());
+        System.out.println("Realm ID : " + client.getRealmId());
+        System.out.println("Client ID: " + client.getId());
 
-        List<Transaction> transactions = transactionRepository.findByClientOrderByIdDesc(client.get());
+        return transactionRepository.findByClient(
+                client,
+                org.springframework.data.domain.PageRequest.of(page, 10));
 
-        System.out.println("Transactions found: " + transactions.size());
-
-        return transactions;
     }
 
     public String getCompanyName() {
 
-        Optional<Client> client = clientRepository.findByCompanyName("Barak Medical");
-
-        if (client.isPresent()) {
-            return client.get().getCompanyName();
-        }
-
-        return "Unknown Company";
+        return getCurrentClient().getCompanyName();
 
     }
 
     public List<ChartOfAccount> getChartOfAccounts() {
 
-        Optional<Client> client = clientRepository.findByCompanyName("Barak Medical");
-
-        if (client.isEmpty()) {
-            return Collections.emptyList();
-        }
-
         return chartOfAccountRepository
-                .findByClientAndActiveTrue(client.get());
+                .findByClientAndActiveTrue(getCurrentClient());
 
     }
 
     public void performAction(DashboardActionDTO dto) {
 
-        if (dto.getAction() == DashboardAction.ACCEPT) {
+        if (dto.getAction() == DashboardAction.ACCEPT
+                || dto.getAction() == DashboardAction.ONCE) {
 
             Optional<Transaction> transaction = transactionRepository.findById(dto.getTransactionId());
 
             if (transaction.isPresent()) {
 
-                transaction.get().setStatus("ACCEPTED");
+                try {
 
-                transactionRepository.save(transaction.get());
+                    quickBooksWriteBackService.createExpense(transaction.get());
+
+                    transaction.get().setStatus("ACCEPTED");
+
+                    transactionRepository.save(transaction.get());
+
+                } catch (Exception ex) {
+
+                    ex.printStackTrace();
+
+                    throw new RuntimeException(
+                            "Failed to write transaction back to QuickBooks.");
+
+                }
 
                 System.out.println();
                 System.out.println("==============================");
@@ -114,16 +117,32 @@ public class DashboardService {
             return;
         }
 
-        Optional<ChartOfAccount> account = chartOfAccountRepository.findById(dto.getAccountId());
+        ChartOfAccount account;
 
-        if (account.isEmpty()) {
+        if (dto.getAction() == DashboardAction.ALWAYS) {
 
-            System.out.println("Account not found.");
-            return;
+            account = transaction.get().getChartOfAccount();
+
+            if (account == null) {
+
+                System.out.println("Transaction has no Chart of Account.");
+                return;
+            }
+
+        } else {
+
+            Optional<ChartOfAccount> selectedAccount = chartOfAccountRepository.findById(dto.getAccountId());
+
+            if (selectedAccount.isEmpty()) {
+
+                System.out.println("Account not found.");
+                return;
+            }
+
+            account = selectedAccount.get();
         }
 
-        transaction.get().setSuggestedCategory(
-                account.get().getAccountName());
+        transaction.get().setChartOfAccount(account);
 
         transactionRepository.save(transaction.get());
 
@@ -132,8 +151,94 @@ public class DashboardService {
         System.out.println("TRANSACTION UPDATED");
         System.out.println("==============================");
         System.out.println("Transaction : " + transaction.get().getId());
-        System.out.println("New Account : " + account.get().getAccountName());
+        System.out.println("New Account : " + account.getAccountName());
+
+        if (dto.getAction() == DashboardAction.ALWAYS) {
+
+            businessRuleService.saveRule(
+                    transaction.get().getClient(),
+                    transaction.get().getDescription(),
+                    account);
+
+            transaction.get().setChartOfAccount(account);
+            transaction.get().setStatus("ACCEPTED");
+
+            transactionRepository.save(transaction.get());
+
+            System.out.println();
+            System.out.println("==============================");
+            System.out.println("BUSINESS RULE CREATED");
+            System.out.println("==============================");
+            System.out.println("Description : " + transaction.get().getDescription());
+            System.out.println("Account     : " + account.getAccountName());
+
+            return;
+        }
 
     }
 
+    public void acceptSelected(List<Long> transactionIds) {
+
+        for (Long id : transactionIds) {
+
+            Optional<Transaction> transaction = transactionRepository.findById(id);
+
+            if (transaction.isPresent()) {
+
+                transaction.get().setStatus("ACCEPTED");
+
+                transactionRepository.save(transaction.get());
+
+                System.out.println("Accepted transaction: " + id);
+
+            }
+
+        }
+
+    }
+
+    private Client getCurrentClient() {
+
+        String companyName = quickBooksSessionService.getCompanyName();
+        System.out.println("SESSION COMPANY IS: " + quickBooksSessionService.getCompanyName());
+
+        System.out.println("Current Company: " + companyName);
+
+        return clientRepository
+                .findByCompanyName(companyName)
+                .orElseThrow(() -> new RuntimeException("Client not found: " + companyName));
+
+    }
+
+    public void rememberAll(List<Long> transactionIds) {
+
+        for (Long id : transactionIds) {
+
+            Optional<Transaction> transaction = transactionRepository.findById(id);
+
+            if (transaction.isPresent()) {
+
+                Transaction t = transaction.get();
+
+                ChartOfAccount account = t.getChartOfAccount();
+
+                if (account != null) {
+
+                    businessRuleService.saveRule(
+                            t.getClient(),
+                            t.getDescription(),
+                            account);
+
+                    t.setStatus("ACCEPTED");
+                    transactionRepository.save(t);
+
+                    System.out.println("Rule created: " + t.getDescription());
+
+                }
+
+            }
+
+        }
+
+    }
 }

@@ -20,22 +20,28 @@ public class UnknownTransactionService {
         private final ClientRepository clientRepository;
         private final ChartOfAccountService chartOfAccountService;
         private final MatchingService matchingService;
+        private final QuickBooksSessionService quickBooksSessionService;
 
         public UnknownTransactionService(
                         TransactionRepository transactionRepository,
                         ClientRepository clientRepository,
                         ChartOfAccountService chartOfAccountService,
-                        MatchingService matchingService) {
+                        MatchingService matchingService,
+                        QuickBooksSessionService quickBooksSessionService) {
 
                 this.transactionRepository = transactionRepository;
                 this.clientRepository = clientRepository;
                 this.chartOfAccountService = chartOfAccountService;
                 this.matchingService = matchingService;
+                this.quickBooksSessionService = quickBooksSessionService;
         }
 
         public void process(
                         String companyName,
                         List<UnknownTransactionDTO> transactions) {
+
+                quickBooksSessionService.setCompanyName(companyName);
+                System.out.println("SESSION COMPANY SET TO: " + quickBooksSessionService.getCompanyName());
 
                 System.out.println();
                 System.out.println("Processing "
@@ -97,12 +103,9 @@ public class UnknownTransactionService {
 
                         if (match.getAccount() != null) {
 
-                                transaction.setSuggestedCategory(
-                                                match.getAccount().getAccountName());
+                                transaction.setChartOfAccount(
+                                                match.getAccount());
 
-                        } else {
-
-                                transaction.setSuggestedCategory("UNKNOWN");
                         }
 
                         transactionRepository.save(transaction);
@@ -114,7 +117,9 @@ public class UnknownTransactionService {
                         System.out.println("Client      : " + client.getCompanyName());
                         System.out.println("Description : " + dto.getDescription());
                         System.out.println("Suggestion  : "
-                                        + transaction.getSuggestedCategory());
+                                        + (transaction.getChartOfAccount() != null
+                                                        ? transaction.getChartOfAccount().getAccountName()
+                                                        : "UNKNOWN"));
                         System.out.println("Confidence  : "
                                         + match.getConfidence());
                         System.out.println("Reason      : "

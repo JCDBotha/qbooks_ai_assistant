@@ -22,6 +22,8 @@ public class ChartOfAccount {
 
     private Boolean active = true;
 
+    private String quickbooksAccountId;
+
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public ChartOfAccount() {
@@ -65,5 +67,13 @@ public class ChartOfAccount {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public String getQuickbooksAccountId() {
+        return quickbooksAccountId;
+    }
+
+    public void setQuickbooksAccountId(String quickbooksAccountId) {
+        this.quickbooksAccountId = quickbooksAccountId;
     }
 }

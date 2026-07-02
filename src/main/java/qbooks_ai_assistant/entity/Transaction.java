@@ -25,6 +25,10 @@ public class Transaction {
     private String status;
 
     @ManyToOne
+    @JoinColumn(name = "chart_of_account_id")
+    private ChartOfAccount chartOfAccount;
+
+    @ManyToOne
     @JoinColumn(name = "client_id")
     private Client client;
 
@@ -89,5 +93,13 @@ public class Transaction {
 
     public void setClient(Client client) {
         this.client = client;
+    }
+
+    public ChartOfAccount getChartOfAccount() {
+        return chartOfAccount;
+    }
+
+    public void setChartOfAccount(ChartOfAccount chartOfAccount) {
+        this.chartOfAccount = chartOfAccount;
     }
 }

@@ -3,19 +3,18 @@ package qbooks_ai_assistant.repository;
 import java.util.Optional;
 import java.math.BigDecimal;
 import java.util.List;
-
 import qbooks_ai_assistant.entity.Client;
 import qbooks_ai_assistant.entity.Transaction;
-
 import org.springframework.data.jpa.repository.JpaRepository;
-
 import qbooks_ai_assistant.entity.Transaction;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
 
         List<Transaction> findByStatus(String status);
 
-        List<Transaction> findByClientOrderByIdDesc(Client client);
+        Page<Transaction> findByClient(Client client, Pageable pageable);
 
         boolean existsByDescriptionAndAmount(
                         String description,

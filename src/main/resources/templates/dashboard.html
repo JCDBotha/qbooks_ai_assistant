@@ -6,15 +6,12 @@
     <meta charset="UTF-8">
 
     <title>QuickBooks AI Assistant</title>
-
-
-
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
           rel="stylesheet">
 
 </head>
 
-<body class="bg-light">
+<body style="background-color:#f5feff;">
 
 <div class="container mt-5">
 
@@ -47,11 +44,36 @@
                 <span th:text="${#lists.size(transactions)}"></span>
             </h6>
 
+            <div class="mb-3">
+
+    <button class="btn btn-success me-2" id="selectAllBtn">
+        Select All
+    </button>
+
+    <button class="btn btn-primary me-2" id="acceptSelectedBtn">
+        Accept Selected
+    </button>
+
+    <button class="btn btn-info text-white" id="rememberSelectedBtn">
+        Remember Selected
+    </button>
+
+</div>
+
+<div id="successMessage"
+     class="alert alert-success d-none"
+     role="alert">
+</div>
+
             <table class="table table-striped table-hover">
 
               <thead class="table-dark">
 
     <tr>
+
+        <th style="width:40px;">
+    <input type="checkbox" id="selectAllCheckbox">
+</th>
 
         <th>Date</th>
 
@@ -63,58 +85,105 @@
 
         <th>Status</th>
 
-        <th>Action</th>
+        <th style="width:340px;">Actions</th>
 
     </tr>
 
 </thead>
+      
+<tbody>
 
-                <tbody>
-
-                  <tr th:each="transaction : ${transactions}"
+<tr th:each="transaction : ${transactions}"
     th:attr="data-id=${transaction.id},
              data-description=${transaction.description},
              data-account=${transaction.suggestedCategory}">
-                      <td th:text="${transaction.transactionDate}"></td>
+
+    <td>
+        <input type="checkbox"
+               class="transaction-checkbox">
+    </td>
+
+    <td th:text="${transaction.transactionDate}"></td>
 
     <td th:text="${transaction.description}"></td>
 
     <td th:text="${transaction.amount}"></td>
 
-    <td th:text="${transaction.suggestedCategory}"></td>
+    <td th:text="${transaction.chartOfAccount != null
+        ? transaction.chartOfAccount.accountName
+        : 'UNKNOWN'}"></td>
 
     <td th:text="${transaction.status}"></td>
 
     <td>
 
-     <button
-    class="btn btn-success btn-sm accept-btn">
-
-    Accept
-
-</button>
-
     <button
-    class="btn btn-warning btn-sm change-btn"
-    data-bs-toggle="modal"
-    data-bs-target="#changeAccountModal">
+        class="btn btn-success btn-sm accept-btn">
+        Accept Once
+    </button>
 
-    Change
+   <button
+    class="btn btn-primary btn-sm remember-btn">
+    Remember
+    </button>
 
-</button>
+    <select
+        class="form-select form-select-sm change-account mt-2">
 
-        <button class="btn btn-primary btn-sm">
-            Rule
-        </button>
+        <option value="">
+            Change...
+        </option>
 
-    </td>
+        <option
+            th:each="account : ${accounts}"
+            th:value="${account.id}"
+            th:text="${account.accountName}">
+        </option>
 
+    </select>
+
+</td>
 </tr>
 
                 </tbody>
-                  
-
+            
             </table>
+
+            <div class="d-flex justify-content-between align-items-center mt-3">
+
+    <a th:if="${currentPage > 0}"
+       th:href="@{/dashboard(page=${currentPage - 1})}"
+       class="btn btn-outline-primary">
+        ← Previous
+    </a>
+
+<div class="text-center">
+
+    <div>
+        Page <span th:text="${currentPage + 1}"></span>
+        of
+        <span th:text="${totalPages}"></span>
+    </div>
+
+    <small class="text-muted">
+        Showing
+        <span th:text="${currentPage * 10 + 1}"></span>
+        -
+    <span th:text="${transactions.size() + currentPage * 10}"></span>
+        of
+        <span th:text="${totalTransactions}"></span>
+        transactions
+    </small>
+
+</div>
+
+    <a th:if="${currentPage + 1 < totalPages}"
+       th:href="@{/dashboard(page=${currentPage + 1})}"
+       class="btn btn-outline-primary">
+        Next →
+    </a>
+
+</div>
 
         </div>
 
@@ -136,7 +205,7 @@
             <div class="modal-header">
 
                 <h5 class="modal-title">
-                    Change Suggested Account
+                    Remember Transaction
                 </h5>
 
                 <button
@@ -159,7 +228,7 @@
                         id="transactionId">
 
                 <label class="form-label">
-                    Choose Account
+                    Choose the account to remember
                 </label>
 
                 <select
@@ -186,13 +255,21 @@
 
                 </button>
 
-                <button
-                        class="btn btn-primary"
-                        id="saveAccount">
+              <button
+    class="btn btn-success"
+    id="saveOnceBtn">
 
-                    Save
+    Save Once
 
-                </button>
+</button>
+
+<button
+    class="btn btn-primary"
+    id="rememberBtn">
+
+    Remember
+
+</button>
 
             </div>
 
@@ -202,111 +279,36 @@
 
 </div>
 
+<div class="toast-container position-fixed top-0 end-0 p-3">
+
+    <div id="successToast"
+         class="toast align-items-center text-bg-success border-0"
+         role="alert"
+         aria-live="assertive"
+         aria-atomic="true">
+
+        <div class="d-flex">
+
+            <div class="toast-body" id="toastMessage">
+
+                Success
+
+            </div>
+
+            <button type="button"
+                    class="btn-close btn-close-white me-2 m-auto"
+                    data-bs-dismiss="toast">
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
 
-
-<script>
-
-document.querySelectorAll(".change-btn").forEach(button => {
-
-    button.addEventListener("click", function () {
-
-        const row = this.closest("tr");
-
-        document.getElementById("transactionId").value =
-            row.dataset.id;
-
-        document.getElementById("transactionDescription").innerText =
-            row.dataset.description;
-
-    });
-
-});
-
-
-document.getElementById("saveAccount")
-.addEventListener("click", function () {
-
-    const dto = {
-
-        transactionId:
-            document.getElementById("transactionId").value,
-
-        accountId:
-            document.getElementById("accountSelect").value,
-
-        action: "CHANGE"
-
-    };
-
-    fetch("/dashboard/action", {
-
-        method: "POST",
-
-        headers: {
-
-            "Content-Type": "application/json"
-
-        },
-
-        body: JSON.stringify(dto)
-
-    })
-    .then(response => response.text())
-  .then(result => {
-
-    console.log(result);
-
-    location.reload();
-
-});
-
-document.querySelectorAll(".accept-btn").forEach(button => {
-
-    button.addEventListener("click", function () {
-
-        const row = this.closest("tr");
-
-        const dto = {
-
-            transactionId: row.dataset.id,
-
-            accountId: 0,
-
-            action: "ACCEPT"
-
-        };
-
-        fetch("/dashboard/action", {
-
-            method: "POST",
-
-            headers: {
-
-                "Content-Type": "application/json"
-
-            },
-
-            body: JSON.stringify(dto)
-
-        })
-        .then(response => response.text())
-        .then(result => {
-
-            console.log(result);
-
-            location.reload();
-
-        });
-
-    });
-
-});
-
-});
-
-</script>
+<script src="/dashboard.js"></script>
 </body>
 
 </html>
